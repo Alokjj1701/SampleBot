@@ -1,14 +1,13 @@
-const { ipcRenderer } = require('electron');
-
-const startBtn = document.getElementById('startBtn');
-const stopBtn = document.getElementById('stopBtn');
+// Get DOM elements
 const channelInput = document.getElementById('channel');
 const parentInput = document.getElementById('parent');
-const statusDiv = document.getElementById('status');
-const viewerList = document.getElementById('viewerList');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
 const totalViewersEl = document.getElementById('totalViewers');
 const activeViewersEl = document.getElementById('activeViewers');
 const errorViewersEl = document.getElementById('errorViewers');
+const viewerListEl = document.getElementById('viewerList');
+const statusEl = document.getElementById('status');
 
 let viewerStats = {
   total: 0,
@@ -26,8 +25,8 @@ function addStatusMessage(message, isError = false) {
   const div = document.createElement('div');
   div.className = `status-item ${isError ? 'error' : 'success'}`;
   div.textContent = message;
-  statusDiv.appendChild(div);
-  statusDiv.scrollTop = statusDiv.scrollHeight;
+  statusEl.appendChild(div);
+  statusEl.scrollTop = statusEl.scrollHeight;
 }
 
 function updateViewerStatus(index, proxy, status, error = null) {
@@ -36,7 +35,7 @@ function updateViewerStatus(index, proxy, status, error = null) {
     viewerItem = document.createElement('div');
     viewerItem.id = `viewer-${index}`;
     viewerItem.className = 'viewer-item';
-    viewerList.appendChild(viewerItem);
+    viewerListEl.appendChild(viewerItem);
   }
 
   const statusDot = document.createElement('div');
@@ -67,6 +66,7 @@ function updateViewerStatus(index, proxy, status, error = null) {
   updateStats();
 }
 
+// Fetch parent domain from server
 async function fetchParentDomain() {
   try {
     const response = await fetch('/api/parent-domain');
@@ -81,16 +81,18 @@ async function fetchParentDomain() {
   }
 }
 
+// Add status message
 function addStatus(message, type = 'info') {
   const div = document.createElement('div');
   div.className = `status-item ${type}`;
   div.textContent = message;
-  statusDiv.insertBefore(div, statusDiv.firstChild);
+  statusEl.insertBefore(div, statusEl.firstChild);
   console.log(`[${type}] ${message}`);
 }
 
+// Update viewer list
 function updateViewerList(viewers) {
-  viewerList.innerHTML = '';
+  viewerListEl.innerHTML = '';
   viewers.forEach(viewer => {
     const div = document.createElement('div');
     div.className = 'viewer-item';
@@ -101,10 +103,11 @@ function updateViewerList(viewers) {
       </div>
       <span>${viewer.status}</span>
     `;
-    viewerList.appendChild(div);
+    viewerListEl.appendChild(div);
   });
 }
 
+// Start viewer bot
 async function startViewers() {
   const channel = channelInput.value.trim();
   const parent = parentInput.value.trim();
@@ -141,6 +144,7 @@ async function startViewers() {
   }
 }
 
+// Stop viewer bot
 async function stopViewers() {
   try {
     stopBtn.disabled = true;
@@ -166,12 +170,14 @@ async function stopViewers() {
   }
 }
 
+// Update stats
 function updateStats(data) {
   totalViewersEl.textContent = data.total;
   activeViewersEl.textContent = data.active;
   errorViewersEl.textContent = data.errors;
 }
 
+// Poll for status updates
 async function pollStatus() {
   try {
     const response = await fetch('/api/status');
@@ -185,13 +191,16 @@ async function pollStatus() {
   }
 }
 
+// Initialize the application
 function init() {
   console.log('Initializing application...');
   fetchParentDomain();
   setInterval(pollStatus, 5000);
 }
 
+// Set up event listeners
 startBtn.addEventListener('click', startViewers);
 stopBtn.addEventListener('click', stopViewers);
 
+// Start the application when the DOM is loaded
 document.addEventListener('DOMContentLoaded', init); 
