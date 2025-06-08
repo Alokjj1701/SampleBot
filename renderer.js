@@ -67,52 +67,124 @@ function updateViewerStatus(index, proxy, status, error = null) {
   updateStats();
 }
 
-startBtn.addEventListener('click', () => {
+async function fetchParentDomain() {
+  try {
+    const response = await fetch('/api/parent-domain');
+    const data = await response.json();
+    if (data.success) {
+      parentInput.value = data.data.parentDomain;
+    }
+  } catch (error) {
+    console.error('Error fetching parent domain:', error);
+  }
+}
+
+fetchParentDomain();
+
+function addStatus(message, type = 'info') {
+  const div = document.createElement('div');
+  div.className = `status-item ${type}`;
+  div.textContent = message;
+  statusDiv.insertBefore(div, statusDiv.firstChild);
+}
+
+function updateViewerList(viewers) {
+  viewerList.innerHTML = '';
+  viewers.forEach(viewer => {
+    const div = document.createElement('div');
+    div.className = 'viewer-item';
+    div.innerHTML = `
+      <div style="display: flex; align-items: center;">
+        <div class="viewer-status ${viewer.status}"></div>
+        <span>Viewer ${viewer.id}</span>
+      </div>
+      <span>${viewer.status}</span>
+    `;
+    viewerList.appendChild(div);
+  });
+}
+
+async function startViewers() {
   const channel = channelInput.value.trim();
   const parent = parentInput.value.trim();
-  if (!channel || !parent) {
-    addStatusMessage('Please enter both channel and parent domain.', true);
+  const viewers = 5; // Default to 5 viewers for testing
+
+  if (!channel) {
+    addStatus('Please enter a channel name', 'error');
     return;
   }
-  
-  startBtn.disabled = true;
-  stopBtn.disabled = false;
-  statusDiv.innerHTML = '';
-  viewerList.innerHTML = '';
-  viewerStats = { total: 0, active: 0, errors: 0 };
-  updateStats();
-  
-  addStatusMessage('Launching viewers...');
-  ipcRenderer.send('start-viewers', { channel, parent });
-});
 
-stopBtn.addEventListener('click', () => {
-  ipcRenderer.send('stop-viewers');
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
-  addStatusMessage('Stopping all viewers...');
-});
+  try {
+    startBtn.disabled = true;
+    addStatus('Starting viewers...');
 
-ipcRenderer.on('viewer-status', (event, { index, proxy, status, error }) => {
-  if (status === 'Testing proxy...') {
-    addStatusMessage(`Testing proxy ${index + 1}...`);
-  } else if (status === 'Proxy working') {
-    addStatusMessage(`Proxy ${index + 1} is working`);
-    viewerStats.total++;
-    updateStats();
-  } else {
-    updateViewerStatus(index, proxy, status, error);
+    const response = await fetch('/api/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel, viewers, parent })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      addStatus('Viewers started successfully', 'success');
+      stopBtn.disabled = false;
+      updateStats(data.data);
+      updateViewerList(data.data.viewers);
+    } else {
+      addStatus(data.error || 'Failed to start viewers', 'error');
+      startBtn.disabled = false;
+    }
+  } catch (error) {
+    addStatus('Error starting viewers: ' + error.message, 'error');
+    startBtn.disabled = false;
   }
-});
+}
 
-ipcRenderer.on('all-viewers-started', () => {
-  addStatusMessage('All viewers launched successfully.');
-});
+async function stopViewers() {
+  try {
+    stopBtn.disabled = true;
+    addStatus('Stopping viewers...');
 
-ipcRenderer.on('all-viewers-stopped', () => {
-  addStatusMessage('All viewers stopped.');
-  startBtn.disabled = false;
-  stopBtn.disabled = true;
-  viewerStats = { total: 0, active: 0, errors: 0 };
-  updateStats();
-}); 
+    const response = await fetch('/api/stop', {
+      method: 'POST'
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      addStatus('Viewers stopped successfully', 'success');
+      startBtn.disabled = false;
+      updateStats(data.data);
+      updateViewerList(data.data.viewers);
+    } else {
+      addStatus(data.error || 'Failed to stop viewers', 'error');
+      stopBtn.disabled = false;
+    }
+  } catch (error) {
+    addStatus('Error stopping viewers: ' + error.message, 'error');
+    stopBtn.disabled = false;
+  }
+}
+
+function updateStats(data) {
+  totalViewersEl.textContent = data.total;
+  activeViewersEl.textContent = data.active;
+  errorViewersEl.textContent = data.errors;
+}
+
+async function pollStatus() {
+  try {
+    const response = await fetch('/api/status');
+    const data = await response.json();
+    if (data.success) {
+      updateStats(data.data);
+      updateViewerList(data.data.viewers);
+    }
+  } catch (error) {
+    console.error('Error polling status:', error);
+  }
+}
+
+startBtn.addEventListener('click', startViewers);
+stopBtn.addEventListener('click', stopViewers);
+
+setInterval(pollStatus, 5000); 

@@ -13,9 +13,24 @@ app.use(express.json());
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve the main HTML file
+// Get the Glitch URL
+const glitchUrl = process.env.PROJECT_DOMAIN 
+  ? `https://${process.env.PROJECT_DOMAIN}.glitch.me`
+  : `http://localhost:${port}`;
+
+// Serve the main HTML file with Glitch URL
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// API endpoint to get parent domain
+app.get('/api/parent-domain', (req, res) => {
+  res.json({ 
+    success: true, 
+    data: {
+      parentDomain: glitchUrl
+    }
+  });
 });
 
 // Store viewer bot state
@@ -100,10 +115,6 @@ app.get('/api/status', (req, res) => {
 
 // Start the server
 const listener = app.listen(port, () => {
-  const glitchUrl = process.env.PROJECT_DOMAIN 
-    ? `https://${process.env.PROJECT_DOMAIN}.glitch.me`
-    : `http://localhost:${port}`;
-    
   console.log(`Server is running on port ${port}`);
   console.log(`Web interface available at ${glitchUrl}`);
 }); 
