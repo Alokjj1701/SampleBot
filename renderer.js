@@ -73,19 +73,20 @@ async function fetchParentDomain() {
     const data = await response.json();
     if (data.success) {
       parentInput.value = data.data.parentDomain;
+      console.log('Parent domain set to:', data.data.parentDomain);
     }
   } catch (error) {
     console.error('Error fetching parent domain:', error);
+    addStatus('Error fetching parent domain: ' + error.message, 'error');
   }
 }
-
-fetchParentDomain();
 
 function addStatus(message, type = 'info') {
   const div = document.createElement('div');
   div.className = `status-item ${type}`;
   div.textContent = message;
   statusDiv.insertBefore(div, statusDiv.firstChild);
+  console.log(`[${type}] ${message}`);
 }
 
 function updateViewerList(viewers) {
@@ -184,7 +185,13 @@ async function pollStatus() {
   }
 }
 
+function init() {
+  console.log('Initializing application...');
+  fetchParentDomain();
+  setInterval(pollStatus, 5000);
+}
+
 startBtn.addEventListener('click', startViewers);
 stopBtn.addEventListener('click', stopViewers);
 
-setInterval(pollStatus, 5000); 
+document.addEventListener('DOMContentLoaded', init); 

@@ -10,15 +10,15 @@ app.use(cors());
 // Parse JSON bodies
 app.use(express.json());
 
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Get the Glitch URL
 const glitchUrl = process.env.PROJECT_DOMAIN 
   ? `https://${process.env.PROJECT_DOMAIN}.glitch.me`
   : `http://localhost:${port}`;
 
-// Serve the main HTML file with Glitch URL
+// Serve static files from the current directory
+app.use(express.static(__dirname));
+
+// Serve the main HTML file
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
