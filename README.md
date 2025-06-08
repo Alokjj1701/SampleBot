@@ -1,6 +1,6 @@
-# Twitch Viewer Bot
+# Twitch  Bot
 
-A headless Twitch viewer bot with proxy support, built using Electron and Puppeteer.
+A headless Twitch bot with proxy support, built using Electron and Puppeteer.
 
 ## Features
 
