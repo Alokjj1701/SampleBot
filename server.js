@@ -18,6 +18,15 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Store viewer bot state
+let viewerState = {
+  isRunning: false,
+  total: 0,
+  active: 0,
+  errors: 0,
+  viewers: []
+};
+
 // API endpoint to start viewer bot
 app.post('/api/start', async (req, res) => {
   try {
@@ -28,16 +37,24 @@ app.post('/api/start', async (req, res) => {
         error: 'Channel and number of viewers are required' 
       });
     }
+
+    // Update viewer state
+    viewerState = {
+      isRunning: true,
+      total: parseInt(viewers),
+      active: parseInt(viewers),
+      errors: 0,
+      viewers: Array(parseInt(viewers)).fill().map((_, i) => ({
+        id: i + 1,
+        status: 'active',
+        error: null
+      }))
+    };
     
-    // For now, just return a success message
     res.json({ 
       success: true, 
       message: 'Viewer bot started successfully',
-      data: {
-        channel,
-        viewers,
-        proxies
-      }
+      data: viewerState
     });
   } catch (error) {
     console.error('Error starting viewer bot:', error);
@@ -48,7 +65,20 @@ app.post('/api/start', async (req, res) => {
 // API endpoint to stop viewer bot
 app.post('/api/stop', (req, res) => {
   try {
-    res.json({ success: true, message: 'Viewer bot stopped successfully' });
+    // Reset viewer state
+    viewerState = {
+      isRunning: false,
+      total: 0,
+      active: 0,
+      errors: 0,
+      viewers: []
+    };
+    
+    res.json({ 
+      success: true, 
+      message: 'Viewer bot stopped successfully',
+      data: viewerState
+    });
   } catch (error) {
     console.error('Error stopping viewer bot:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -60,12 +90,7 @@ app.get('/api/status', (req, res) => {
   try {
     res.json({ 
       success: true, 
-      data: {
-        total: 0,
-        active: 0,
-        errors: 0,
-        viewers: []
-      }
+      data: viewerState
     });
   } catch (error) {
     console.error('Error getting status:', error);
