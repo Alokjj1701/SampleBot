@@ -1,0 +1,22 @@
+{
+  "name": "twitch-viewer-bot",
+  "version": "1.0.0",
+  "description": "Headless Twitch viewer bot with proxy support",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "electron": "^28.0.0",
+    "express": "^4.18.2",
+    "puppeteer": "^21.0.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "author": "",
+  "license": "MIT"
+} 
