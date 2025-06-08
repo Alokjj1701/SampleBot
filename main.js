@@ -242,4 +242,66 @@ async function launchViewer(index, proxy, channel, parent, event) {
 app.on('window-all-closed', async () => {
   await stopAllBrowsers();
   app.quit();
-}); 
+});
+
+let viewerStats = {
+  total: 0,
+  active: 0,
+  errors: 0,
+  viewers: []
+};
+
+function getViewerStats() {
+  return {
+    ...viewerStats,
+    viewers: viewerStats.viewers.map(v => ({
+      id: v.id,
+      status: v.status,
+      proxy: v.proxy
+    }))
+  };
+}
+
+async function launchViewer(channel, numViewers, proxies = []) {
+  if (!channel || !numViewers) {
+    throw new Error('Channel and number of viewers are required');
+  }
+
+  // Reset stats
+  viewerStats = {
+    total: numViewers,
+    active: 0,
+    errors: 0,
+    viewers: []
+  };
+
+  // Launch viewers
+  for (let i = 0; i < numViewers; i++) {
+    const proxy = proxies[i % proxies.length];
+    const viewer = {
+      id: i + 1,
+      status: 'connecting',
+      proxy: proxy
+    };
+    viewerStats.viewers.push(viewer);
+    
+    try {
+      await launchViewer(channel, proxy);
+      viewer.status = 'active';
+      viewerStats.active++;
+    } catch (error) {
+      viewer.status = 'error';
+      viewerStats.errors++;
+      console.error(`Viewer ${i + 1} failed to connect:`, error);
+    }
+  }
+
+  return getViewerStats();
+}
+
+// Export the necessary functions
+module.exports = {
+  launchViewer,
+  stopViewers,
+  getViewerStats
+}; 
